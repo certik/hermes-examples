@@ -123,13 +123,14 @@ int main(int argc, char* argv[])
 #else
   H1Space<double> p_space(&mesh_with_hole, &bcs_pressure, P_INIT_PRESSURE);
 #endif
-  H1Space<double> temperature_space(&mesh_whole_domain, &bcs_temperature, P_INIT_TEMPERATURE);
+  //H1Space<double> temperature_space(&mesh_whole_domain, &bcs_temperature, P_INIT_TEMPERATURE);
+  //Hermes::vector<Space<double> *> all_spaces = Hermes::vector<Space<double> *>(&xvel_space, 
+  //    &yvel_space, &p_space, &temperature_space);
   Hermes::vector<Space<double> *> all_spaces = Hermes::vector<Space<double> *>(&xvel_space, 
-      &yvel_space, &p_space, &temperature_space);
+      &yvel_space, &p_space);
 
   // Calculate and report the number of degrees of freedom.
-  int ndof = Space<double>::get_num_dofs(Hermes::vector<Space<double> *>(&xvel_space, 
-      &yvel_space, &p_space, &temperature_space));
+  int ndof = Space<double>::get_num_dofs(all_spaces);
   info("ndof = %d.", ndof);
 
   // Define projection norms.
@@ -139,20 +140,26 @@ int main(int argc, char* argv[])
 #else
   ProjNormType p_proj_norm = HERMES_H1_NORM;
 #endif
-  ProjNormType temperature_proj_norm = HERMES_H1_NORM;
+  //ProjNormType temperature_proj_norm = HERMES_H1_NORM;
+  //Hermes::vector<ProjNormType> all_proj_norms = Hermes::vector<ProjNormType>(vel_proj_norm, 
+  //    vel_proj_norm, p_proj_norm, temperature_proj_norm);
   Hermes::vector<ProjNormType> all_proj_norms = Hermes::vector<ProjNormType>(vel_proj_norm, 
-      vel_proj_norm, p_proj_norm, temperature_proj_norm);
+      vel_proj_norm, p_proj_norm);
 
   // Initial conditions and such.
   info("Setting initial conditions.");
   ZeroSolution xvel_prev_time(&mesh_with_hole), yvel_prev_time(&mesh_with_hole), p_prev_time(&mesh_with_hole);
-  CustomInitialConditionTemperature temperature_init_cond(&mesh_whole_domain, HOLE_MID_X, HOLE_MID_Y, 
-      0.5*OBSTACLE_DIAMETER, TEMPERATURE_INIT_WATER, TEMPERATURE_INIT_GRAPHITE); 
-  Solution<double> temperature_prev_time;
+  //CustomInitialConditionTemperature temperature_init_cond(&mesh_whole_domain, HOLE_MID_X, HOLE_MID_Y, 
+  //    0.5*OBSTACLE_DIAMETER, TEMPERATURE_INIT_WATER, TEMPERATURE_INIT_GRAPHITE); 
+  Solution<double> temperature_prev_time(&mesh_whole_domain);
+  //Hermes::vector<Solution<double> *> all_solutions = Hermes::vector<Solution<double> *>(&xvel_prev_time, 
+  //    &yvel_prev_time, &p_prev_time, &temperature_prev_time);
   Hermes::vector<Solution<double> *> all_solutions = Hermes::vector<Solution<double> *>(&xvel_prev_time, 
-      &yvel_prev_time, &p_prev_time, &temperature_prev_time);
+      &yvel_prev_time, &p_prev_time);
+  //Hermes::vector<MeshFunction<double> *> all_meshfns = Hermes::vector<MeshFunction<double> *>(&xvel_prev_time, 
+  //    &yvel_prev_time, &p_prev_time, &temperature_init_cond);
   Hermes::vector<MeshFunction<double> *> all_meshfns = Hermes::vector<MeshFunction<double> *>(&xvel_prev_time, 
-      &yvel_prev_time, &p_prev_time, &temperature_init_cond);
+      &yvel_prev_time, &p_prev_time);
 
   // Project all initial conditions on their FE spaces to obtain aninitial
   // coefficient vector for the Newton's method. We use local projection
@@ -169,9 +176,9 @@ int main(int argc, char* argv[])
   Solution<double>::vector_to_solutions(coeff_vec, all_spaces, all_solutions);
 
   // Debug.
-  ScalarView t0("Projected temperature");
-  t0.show(&temperature_prev_time);
-  View::wait();
+  //ScalarView t0("Projected temperature");
+  //t0.show(&temperature_prev_time);
+  //View::wait();
 
   // Calculate Reynolds number.
   double reynolds_number = VEL_INLET * OBSTACLE_DIAMETER / KINEMATIC_VISCOSITY_WATER;
@@ -192,14 +199,14 @@ int main(int argc, char* argv[])
   // Initialize views.
   Views::VectorView vview("velocity [m/s]", new Views::WinGeom(0, 0, 700, 360));
   Views::ScalarView pview("pressure [Pa]", new Views::WinGeom(0, 415, 700, 350));
-  Views::ScalarView tempview("temperature [C]", new Views::WinGeom(0, 795, 700, 350));
+  //Views::ScalarView tempview("temperature [C]", new Views::WinGeom(0, 795, 700, 350));
   //vview.set_min_max_range(0, 0.5);
   vview.fix_scale_width(80);
   //pview.set_min_max_range(-0.9, 1.0);
   pview.fix_scale_width(80);
   pview.show_mesh(false);
-  tempview.fix_scale_width(80);
-  tempview.show_mesh(false);
+  //tempview.fix_scale_width(80);
+  //tempview.show_mesh(false);
 
   // Time-stepping loop:
   char title[100];
@@ -214,8 +221,7 @@ int main(int argc, char* argv[])
     if (current_time <= STARTUP_TIME) 
     {
       info("Updating time-dependent essential BC.");
-      Space<double>::update_essential_bc_values(Hermes::vector<Space<double> *>(&xvel_space, &yvel_space, &p_space, 
-                                                &temperature_space), current_time);
+      Space<double>::update_essential_bc_values(all_spaces, current_time);
     }
 
     // Perform Newton's iteration.
@@ -233,9 +239,9 @@ int main(int argc, char* argv[])
       error("Newton's iteration failed.");
     };
     {
-      Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time, &temperature_prev_time);
-      Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<Space<double> *>(&xvel_space, 
-          &yvel_space, &p_space, &temperature_space), tmp);
+      //Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time, &temperature_prev_time);
+      Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time);
+      Solution<double>::vector_to_solutions(newton.get_sln_vector(), all_spaces, tmp);
     }
     
     // Show the solution at the end of time step.
@@ -246,8 +252,8 @@ int main(int argc, char* argv[])
     pview.set_title(title);
     pview.show(&p_prev_time);
     sprintf(title, "Temperature [C], time %g s", current_time);
-    tempview.set_title(title);
-    tempview.show(&temperature_prev_time,  Views::HERMES_EPS_HIGH);
+    //tempview.set_title(title);
+    //tempview.show(&temperature_prev_time,  Views::HERMES_EPS_HIGH);
   }
 
   delete [] coeff_vec;

@@ -30,7 +30,7 @@ CustomWeakFormHeatAndFlow::CustomWeakFormHeatAndFlow(bool Stokes, double Reynold
     Solution<double>* y_vel_previous_time, Solution<double>* T_prev_time, double heat_source, double specific_heat_graphite, 
     double specific_heat_water, double rho_graphite, double rho_water, double thermal_conductivity_graphite, double thermal_conductivity_water,
     bool simple_temp_advection) 
-  : WeakForm<double>(4), Stokes(Stokes), Reynolds(Reynolds), time_step(time_step), x_vel_previous_time(x_vel_previous_time), y_vel_previous_time(y_vel_previous_time)
+  : WeakForm<double>(3), Stokes(Stokes), Reynolds(Reynolds), time_step(time_step), x_vel_previous_time(x_vel_previous_time), y_vel_previous_time(y_vel_previous_time)
   {
     // Jacobian - flow part.
     add_matrix_form(new BilinearFormSymVel(0, 0, Stokes, Reynolds, time_step));
@@ -42,12 +42,16 @@ CustomWeakFormHeatAndFlow::CustomWeakFormHeatAndFlow(bool Stokes, double Reynold
     add_matrix_form(new BilinearFormUnSymXVelPressure(0, 2));
     add_matrix_form(new BilinearFormUnSymYVelPressure(1, 2));
 
+    /*
     // Jacobian - temperature part. 
     // Contribution from implicit Euler.
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormVol<double>(3, 3, "Water", new Hermes2DFunction<double>(1.0/time_step), HERMES_NONSYM));
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormVol<double>(3, 3, "Graphite", new Hermes2DFunction<double>(1.0/time_step), HERMES_NONSYM));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormVol<double>(3, 3, 
+        "Water", new Hermes2DFunction<double>(1.0/time_step), HERMES_NONSYM));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormVol<double>(3, 3, 
+        "Graphite", new Hermes2DFunction<double>(1.0/time_step), HERMES_NONSYM));
     // Contribution from temperature diffusion. 
-    add_matrix_form(new WeakFormsH1::DefaultJacobianDiffusion<double>(3, 3, "Water", new Hermes1DFunction<double>(thermal_conductivity_water/(rho_water * specific_heat_water)), HERMES_NONSYM));
+    add_matrix_form(new WeakFormsH1::DefaultJacobianDiffusion<double>(3, 3, "Water", 
+        new Hermes1DFunction<double>(thermal_conductivity_water/(rho_water * specific_heat_water)), HERMES_NONSYM));
     add_matrix_form(new WeakFormsH1::DefaultJacobianDiffusion<double>(3, 3, "Graphite", 
         new Hermes1DFunction<double>(thermal_conductivity_graphite/(rho_graphite * specific_heat_graphite)), HERMES_NONSYM));
     // Contribution from temperature advection - only in water.
@@ -64,6 +68,7 @@ CustomWeakFormHeatAndFlow::CustomWeakFormHeatAndFlow(bool Stokes, double Reynold
       add_matrix_form(new CustomJacobianTempAdvection_3_1(3, 1, "Water"));
       add_matrix_form(new CustomJacobianTempAdvection_3_3(3, 3, "Water"));
     }
+    */
 
     // Residual - flow part. 
     VectorFormNS_0* F_0 = new VectorFormNS_0(0, Stokes, Reynolds, time_step);
@@ -77,6 +82,7 @@ CustomWeakFormHeatAndFlow::CustomWeakFormHeatAndFlow(bool Stokes, double Reynold
     VectorFormNS_2* F_2 = new VectorFormNS_2(2);
     add_vector_form(F_2);
 
+    /*
     // Residual - temperature part.
     // Contribution from implicit Euler method.
     VectorFormTime *vft = new VectorFormTime(3, "Water", time_step);
@@ -99,6 +105,7 @@ CustomWeakFormHeatAndFlow::CustomWeakFormHeatAndFlow(bool Stokes, double Reynold
       add_vector_form(crta_simple);
     }
     else add_vector_form(new CustomResidualTempAdvection(3, "Water"));
+    */
   };
 
 
