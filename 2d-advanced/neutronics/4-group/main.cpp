@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
   H1Space<double> space2(&mesh, P_INIT_2);
   H1Space<double> space3(&mesh, P_INIT_3);
   H1Space<double> space4(&mesh, P_INIT_4);
-  Hermes::vector<Space<double>*> spaces(&space1, &space2, &space3, &space4);
+  Hermes::vector<const Space<double>* > spaces(&space1, &space2, &space3, &space4);
   int ndof = Space<double>::get_num_dofs(spaces);
   info("ndof = %d", ndof);
 
