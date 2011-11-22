@@ -213,10 +213,10 @@ int main(int argc, char* argv[])
         case 1: mesh.copy(&basemesh);
                 space.set_uniform_order(P_INIT);
                 break;
-        case 2: mesh.unrefine_all_elements();
+        case 2: space.unrefine_all_mesh_elements();
                 space.set_uniform_order(P_INIT);
                 break;
-        case 3: mesh.unrefine_all_elements();
+        case 3: space.unrefine_all_mesh_elements();
                 space.adjust_element_order(-1, -1, P_INIT, P_INIT);
                 break;
         default: error("Wrong global derefinement method.");
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
       // Initialize discrete problem on reference mesh.
       DiscreteProblem<std::complex<double> >* ref_dp = new DiscreteProblem<std::complex<double> >(&wf, ref_space);
       
-      RungeKutta<std::complex<double> > runge_kutta(ref_dp, &bt, matrix_solver);
+      RungeKutta<std::complex<double> > runge_kutta(&wf, ref_space, &bt, matrix_solver);
 
       // Runge-Kutta step on the fine mesh.
       info("Runge-Kutta time step on fine mesh (t = %g s, time step = %g s, stages: %d).", 
@@ -352,7 +352,8 @@ int main(int argc, char* argv[])
       
       // Clean up.
       delete adaptivity;
-      delete ref_space;
+      if(!done)
+        delete ref_space;
       delete ref_dp;
       delete space_error_fn;
     }

@@ -105,7 +105,6 @@ int main(int argc, char* argv[])
   MeshView m1("Mesh for temperature"), m2("Mesh for fluid");
   m1.show(&mesh_whole_domain);
   m2.show(&mesh_with_hole);
-  View::wait();
 
   // Initialize boundary conditions.
   EssentialBCNonConst bc_inlet_vel_x("Inlet", VEL_INLET, H, STARTUP_TIME);
@@ -126,11 +125,13 @@ int main(int argc, char* argv[])
   H1Space<double> p_space(&mesh_with_hole, &bcs_pressure, P_INIT_PRESSURE);
 #endif
   H1Space<double> temperature_space(&mesh_whole_domain, &bcs_temperature, P_INIT_TEMPERATURE);
-  Hermes::vector<Space<double> *> all_spaces = Hermes::vector<Space<double> *>(&xvel_space, 
+  Hermes::vector<Space<double> *> all_spaces(&xvel_space, 
+      &yvel_space, &p_space, &temperature_space);
+  Hermes::vector<const Space<double> *> all_spaces_const(&xvel_space, 
       &yvel_space, &p_space, &temperature_space);
 
   // Calculate and report the number of degrees of freedom.
-  int ndof = Space<double>::get_num_dofs(Hermes::vector<Space<double> *>(&xvel_space, 
+  int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, 
       &yvel_space, &p_space, &temperature_space));
   info("ndof = %d.", ndof);
 
@@ -164,16 +165,11 @@ int main(int argc, char* argv[])
   double* coeff_vec = new double[ndof];
   info("Projecting initial condition to obtain initial vector for the Newton's method.");
   //OGProjection<double>::project_global(all_spaces, all_meshfns, coeff_vec, matrix_solver, all_proj_norms);
-  LocalProjection<double>::project_local(all_spaces, all_meshfns, coeff_vec, matrix_solver, all_proj_norms);
+  LocalProjection<double>::project_local(all_spaces_const, all_meshfns, coeff_vec, matrix_solver, all_proj_norms);
 
   // Translate the solution vector back to Solutions. This is needed to replace
   // the discontinuous initial condition for temperature_prev_time with its projection.
-  Solution<double>::vector_to_solutions(coeff_vec, all_spaces, all_solutions);
-
-  // Debug.
-  ScalarView t0("Projected initial temperature");
-  t0.show(&temperature_prev_time);
-  View::wait();
+  Solution<double>::vector_to_solutions(coeff_vec, all_spaces_const, all_solutions);
 
   // Calculate Reynolds number.
   double reynolds_number = VEL_INLET * OBSTACLE_DIAMETER / KINEMATIC_VISCOSITY_FLUID;
@@ -186,7 +182,7 @@ int main(int argc, char* argv[])
       THERMAL_CONDUCTIVITY_GRAPHITE, THERMAL_CONDUCTIVITY_FLUID, SIMPLE_TEMPERATURE_ADVECTION);
   
   // Initialize the FE problem.
-  DiscreteProblem<double> dp(&wf, all_spaces);
+  DiscreteProblem<double> dp(&wf, all_spaces_const);
 
   // Initialize the Newton solver.
   NewtonSolver<double> newton(&dp, matrix_solver);
@@ -236,7 +232,7 @@ int main(int argc, char* argv[])
     };
     {
       Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time, &temperature_prev_time);
-      Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<Space<double> *>(&xvel_space, 
+      Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<const Space<double> *>(&xvel_space, 
           &yvel_space, &p_space, &temperature_space), tmp);
     }
     
